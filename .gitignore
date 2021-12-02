@@ -37,13 +37,4 @@ out/
 .vscode/
 
 ### Custom ###
-Dockerfile
-
-docker-compose.yml
-
-jenkins/
-
-ngrokw
-
-nohup.out
-
+gitignore/
