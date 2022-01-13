@@ -1,0 +1,2 @@
+-- INSERT INTO post VALUES
+-- (1, 'title', 'content', 0, 0, )
