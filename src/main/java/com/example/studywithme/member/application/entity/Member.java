@@ -1,9 +1,11 @@
 package com.example.studywithme.member.application.entity;
 
 import com.example.studywithme.post.application.entity.Post;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.ArrayList;

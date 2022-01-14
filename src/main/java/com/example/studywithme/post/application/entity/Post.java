@@ -2,9 +2,11 @@ package com.example.studywithme.post.application.entity;
 
 import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.member.application.entity.Member;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -54,5 +56,9 @@ public class Post {
     public void associateWithMember(Member member) {
         this.member = member;
         member.getPosts().add(this);
+    }
+
+    public void increaseHits() {
+        this.hits += 1l;
     }
 }

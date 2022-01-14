@@ -9,6 +9,7 @@ import com.example.studywithme.member.application.dao.MemberRepository;
 import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.dto.PostRequest;
+import com.example.studywithme.post.application.dto.PostResponse;
 import com.example.studywithme.post.application.entity.Post;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
@@ -62,7 +66,6 @@ public class PostApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
     }
-
 
     @Test
     @Sql(scripts = "classpath:db/test/member.sql")
@@ -142,12 +145,24 @@ public class PostApiTest {
 
     @Test
     @Sql(scripts = "classpath:db/test/post_associated_images.sql")
-    void should_read_post_and_associated_image_files() {
+    void should_read_post_and_associated_image_files() throws Exception {
         //Arrange
+        Long pid = 1l;
 
         //Act
+        MockHttpServletResponse response = mockMvc.perform(get("/posts/{pid}", pid))
+                .andDo(print())
+                .andReturn().getResponse();
 
         //Assert
-
+        // post, fetch join member, fetch join images , hits 증가 확인
+        PostResponse postResponse = objectMapper.readValue(response.getContentAsString(), PostResponse.class);
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(postResponse));
+        assertThat(postResponse.getPid()).isEqualTo(pid);
+        assertThat(postResponse.getNickname()).isEqualTo("nickname");
+        assertThat(postResponse.getImageFiles()).usingRecursiveFieldByFieldElementComparator()
+                .extracting("path")
+                .containsAll(Arrays.asList("path", "path2"));
+        assertThat(postResponse.getHits()).isEqualTo(1l);
     }
 }
