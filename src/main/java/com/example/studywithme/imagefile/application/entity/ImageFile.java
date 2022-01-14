@@ -1,6 +1,7 @@
 package com.example.studywithme.imagefile.application.entity;
 
 import com.example.studywithme.post.application.entity.Post;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -16,6 +17,9 @@ public class ImageFile {
     private String path;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    @ToString.Exclude
+    @JsonIgnore
     private Post post;
 
     @Builder

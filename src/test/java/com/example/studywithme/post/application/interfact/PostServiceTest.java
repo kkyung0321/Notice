@@ -10,6 +10,7 @@ import com.example.studywithme.member.application.dao.MemberRepository;
 import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.dto.PostRequest;
+import com.example.studywithme.post.application.dto.PostResponse;
 import com.example.studywithme.post.application.entity.Post;
 import com.example.studywithme.post.application.fileupload.interact.impl.FileUploadServiceImpl;
 import com.example.studywithme.post.application.interact.PostService;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,5 +102,23 @@ public class PostServiceTest {
         multipartFiles.add(multipartFile1);
         multipartFiles.add(multipartFile2);
         return multipartFiles;
+    }
+
+    @Test
+    @Sql(scripts = "classpath:db/test/post_associated_images.sql")
+    void should_read_post_and_associated_image_files() {
+        //Arrange
+        Long pid = 1l;
+
+        //Act
+        PostResponse postResponse = postService.readPost(pid);
+
+        // Assert
+        assertThat(postResponse.getPid()).isEqualTo(pid);
+        assertThat(postResponse.getNickname()).isEqualTo("nickname");
+        assertThat(postResponse.getImageFiles()).usingRecursiveFieldByFieldElementComparator()
+                .extracting("path")
+                .containsAll(Arrays.asList("path", "path2"));
+        assertThat(postResponse.getHits()).isEqualTo(1l);
     }
 }
