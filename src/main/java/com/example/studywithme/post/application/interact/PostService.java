@@ -11,4 +11,6 @@ public interface PostService {
     void writePost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles) throws Exception;
 
     PostResponse readPost(Long pid);
+
+    void modifyPost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles, Long pid) throws Exception;
 }

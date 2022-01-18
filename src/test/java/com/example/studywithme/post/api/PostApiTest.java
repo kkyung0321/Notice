@@ -14,10 +14,12 @@ import com.example.studywithme.post.application.entity.Post;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
@@ -67,13 +69,41 @@ public class PostApiTest {
                 .build();
     }
 
+    private Member getMember() {
+        Member member = Optional.ofNullable(memberRepository.findById(1l))
+                .orElseThrow(() -> {
+                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
+                }).get();
+        return member;
+    }
+
+    private MockMultipartFile getMultipartFile(String originalName, String contentName) {
+        return new MockMultipartFile(
+                "multipartFiles", originalName,
+                MediaType.MULTIPART_FORM_DATA_VALUE, contentName.getBytes()
+        );
+    }
+
+    private MockMultipartFile getPostRequestMultipart(String title, String content) throws JsonProcessingException {
+        PostRequest postRequest = new PostRequest(title, content);
+
+        MockMultipartFile postRequestFile = new MockMultipartFile("postRequest",
+                "", MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsString(postRequest).getBytes(StandardCharsets.UTF_8));
+
+        return postRequestFile;
+    }
+
+    @DisplayName("로그인이 되어 있으면 글을 쓸 수 있다")
     @Test
     @Sql(scripts = "classpath:db/test/member.sql")
-    void should_create_post_if_member_is_logged_in() throws Exception {
+    void writePost() throws Exception {
 
         //Arrange
+        String title = "title";
+        String content = "content";
 
-        MockMultipartFile postRequestFile = getMockMultipartFile();
+        MockMultipartFile postRequestMultipart = getPostRequestMultipart(title, content);
 
         MockMultipartFile multipartFile1 = getMultipartFile("hello1.txt", "hello world1");
 
@@ -83,7 +113,7 @@ public class PostApiTest {
 
         //Act
         mockMvc.perform(multipart("/posts")
-                .file(postRequestFile)
+                .file(postRequestMultipart)
                 .file(multipartFile1)
                 .file(multipartFile2)
                 .with(user(userDto))
@@ -99,8 +129,8 @@ public class PostApiTest {
                 });
 
         assertThat(posts).usingRecursiveFieldByFieldElementComparator()
-                .extracting("title", "content", "likeCounts", "hits")
-                .contains(tuple("title", "content", 0L, 0L));
+                .extracting(title, content, "likeCounts", "hits")
+                .contains(tuple(title, content, 0L, 0L));
 
         // member - post 연관관계 검증
         Post post = posts.get(0);
@@ -119,33 +149,9 @@ public class PostApiTest {
                 .contains(post);
     }
 
-    private Member getMember() {
-        Member member = Optional.ofNullable(memberRepository.findById(1l))
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                }).get();
-        return member;
-    }
-
-    private MockMultipartFile getMultipartFile(String originalName, String contentName) {
-        return new MockMultipartFile(
-                "multipartFiles", "hello1.txt",
-                MediaType.MULTIPART_FORM_DATA_VALUE, "hello world1".getBytes()
-        );
-    }
-
-    private MockMultipartFile getMockMultipartFile() throws JsonProcessingException {
-        PostRequest postRequest = new PostRequest("title", "content");
-
-        MockMultipartFile postRequestFile = new MockMultipartFile("postRequest",
-                "", MediaType.APPLICATION_JSON_VALUE,
-                objectMapper.writeValueAsString(postRequest).getBytes(StandardCharsets.UTF_8));
-        return postRequestFile;
-    }
-
     @Test
-    @Sql(scripts = "classpath:db/test/post_associated_images.sql")
-    void should_read_post_and_associated_image_files() throws Exception {
+    @Sql(scripts = "classpath:db/test/postAndImages.sql")
+    void readPost() throws Exception {
         //Arrange
         Long pid = 1l;
 
@@ -158,11 +164,131 @@ public class PostApiTest {
         // post, fetch join member, fetch join images , hits 증가 확인
         PostResponse postResponse = objectMapper.readValue(response.getContentAsString(), PostResponse.class);
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(postResponse));
+
         assertThat(postResponse.getPid()).isEqualTo(pid);
+
         assertThat(postResponse.getNickname()).isEqualTo("nickname");
+
         assertThat(postResponse.getImageFiles()).usingRecursiveFieldByFieldElementComparator()
                 .extracting("path")
                 .containsAll(Arrays.asList("path", "path2"));
+
         assertThat(postResponse.getHits()).isEqualTo(1l);
+    }
+
+    @DisplayName("로그인 유저와 글쓴이가 같지 않으면 예외를 던진다")
+    @Test
+    @Sql(scripts = {"classpath:db/test/postAndImages.sql"})
+    void throwExceptionWhenModifyPost() throws Exception {
+        //Arrange
+        String modified_title = "modified title";
+        String modified_content = "modified content";
+
+        MockMultipartFile postRequestMultipart = getPostRequestMultipart(modified_title, modified_content);
+
+        String originalName = "modified_hello1.txt";
+        String contentName = "modified hello world1";
+        MockMultipartFile multipartFile = getMultipartFile(originalName, contentName);
+
+        String originalName2 = "modified_hello2.txt";
+        String contentName2 = "modified hello world2";
+        MockMultipartFile multipartFile1 = getMultipartFile(originalName2, contentName2);
+
+        Long pid = 1l;
+
+        UserDto userDto = new UserDto(getMember());
+
+        String username = "username1";
+
+        //Act
+        mockMvc.perform(multipart("/posts/{pid}", pid)
+                .file(postRequestMultipart)
+                .file(multipartFile)
+                .file(multipartFile1)
+                .with(request -> {
+                    request.setMethod(HttpMethod.PUT.name());
+                    return request;
+                })
+                .with(user(userDto))
+                .param("username", username)
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
+                .andDo(print())
+                .andExpect(authenticated())
+                .andExpect(result -> assertThat(result.getResolvedException().getMessage())
+                        .isEqualTo(ErrorCode.INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    @DisplayName("로그인 유저와 글쓴이가 같으면 수정을 한다")
+    @Test
+    @Sql(scripts = {"classpath:db/test/postAndImages.sql"})
+    void modifyPost() throws Exception {
+        //Arrange
+        String modified_title = "modified title";
+        String modified_content = "modified content";
+
+        MockMultipartFile postRequestMultipart = getPostRequestMultipart(modified_title, modified_content);
+
+        String originalName = "modified_hello1.txt";
+        String contentName = "modified hello world1";
+        MockMultipartFile multipartFile = getMultipartFile(originalName, contentName);
+
+        String originalName2 = "modified_hello2.txt";
+        String contentName2 = "modified hello world2";
+        MockMultipartFile multipartFile1 = getMultipartFile(originalName2, contentName2);
+
+        Long pid = 1l;
+
+        UserDto userDto = new UserDto(getMember());
+
+        String username = "username";
+        //Act
+        mockMvc.perform(multipart("/posts/{pid}", pid)
+                .file(postRequestMultipart)
+                .file(multipartFile)
+                .file(multipartFile1)
+                .with(request -> {
+                    request.setMethod(HttpMethod.PUT.name());
+                    return request;
+                })
+                .with(user(userDto))
+                .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
+                .andDo(print())
+                .andExpect(authenticated());
+
+        //Assert
+        List<Post> posts = postRepository.findAll();
+
+        // post 가 변경되었는지 확인
+        assertThat(posts).usingRecursiveFieldByFieldElementComparator()
+                .extracting("title", "content")
+                .contains(tuple(modified_title, modified_content));
+
+        // member - post 연관관계 검증
+        Post post = posts.get(0);
+        assertThat(post.getMember()).isEqualTo(getMember());
+        assertThat(getMember().getPosts().get(0)).isEqualTo(post);
+
+        // 업로드 파일 검증
+        List<ImageFile> imageFiles = Optional.ofNullable(imageFileRepository.findAll())
+                .orElseThrow(() -> {
+                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
+                });
+
+        assertThat(imageFiles).hasAtLeastOneElementOfType(ImageFile.class);
+
+        // post - images 연관관계 검 증
+        assertThat(imageFiles).usingRecursiveFieldByFieldElementComparator()
+                .extracting("post")
+                .contains(post);
+    }
+
+    @Test
+    void deletePost() {
+        //Arrange
+
+        //Act
+
+        //Assert
+        
     }
 }

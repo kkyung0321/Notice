@@ -3,6 +3,7 @@ package com.example.studywithme.post.application.interact.impl;
 import com.example.studywithme.global.auth.UserDto;
 import com.example.studywithme.global.error.exception.EntityNotFoundException;
 import com.example.studywithme.global.error.exception.ErrorCode;
+import com.example.studywithme.imagefile.application.interact.ImageFileService;
 import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.dto.PostRequest;
 import com.example.studywithme.post.application.dto.PostResponse;
@@ -25,12 +26,15 @@ public class PostServiceImpl implements PostService {
 
     private final FileUploadService fileUploadService;
 
+    private final ImageFileService imageFileService;
+
+
     @Override
     public void writePost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles) throws Exception {
         Post post = postRequest.getPost();
         post.associateWithMember(userDto.getMember());
         postRepository.save(post);
-        fileUploadService.manageFile(post, multipartFiles);
+        fileUploadService.uploadFile(post, multipartFiles);
     }
 
     @Override
@@ -40,6 +44,19 @@ public class PostServiceImpl implements PostService {
         post.increaseHits();
 
         return PostResponse.of(post);
+    }
+
+    @Override
+    public void modifyPost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles, Long pid) throws Exception {
+        imageFileService.deletePostAssociatedImageFiles(pid);
+
+        Post post = Optional.ofNullable(postRepository.findById(pid)).orElseThrow(() -> {
+            throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
+        }).get();
+
+        post.updatePost(postRequest);
+
+        fileUploadService.uploadFile(post, multipartFiles);
     }
 
     private Post getPost(Long pid) {

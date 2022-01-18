@@ -31,7 +31,7 @@ public class ImageFileServiceTest {
     private PostRepository postRepository;
 
     @Test
-    void should_save_image_file() {
+    void saveImageFile() {
         //Arrange
         Post post = createPost();
 

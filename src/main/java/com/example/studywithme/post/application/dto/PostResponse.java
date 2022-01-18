@@ -25,6 +25,8 @@ public class PostResponse {
 
     private String modifiedDate;
 
+    private String username;
+
     private String nickname;
 
     private List<ImageFile> imageFiles = new ArrayList<>();
@@ -37,6 +39,7 @@ public class PostResponse {
         this.hits = post.getHits();
         this.createdDate = post.getCreatedDate();
         this.modifiedDate = post.getModifiedDate();
+        this.username = post.getMember().getUsername();
         this.nickname = post.getMember().getNickName();
         post.getImageFiles().forEach(imageFile -> this.imageFiles.add(imageFile));
     }

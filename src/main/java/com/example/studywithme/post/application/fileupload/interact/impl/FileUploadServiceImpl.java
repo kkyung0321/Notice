@@ -24,12 +24,14 @@ public class FileUploadServiceImpl implements FileUploadService {
     private final ImageFileService imageFileService;
 
     @Override
-    public void manageFile(Post post, List<MultipartFile> multipartFiles) throws Exception {
+    public void uploadFile(Post post, List<MultipartFile> multipartFiles) throws Exception {
+
+        Post post1 = getPost(post);
 
         for (MultipartFile file : getMultipartFiles(multipartFiles)) {
             String path = uploadFileAndReturnFilePath(file);
 
-            imageFileService.saveImageFile(getPost(post), path);
+            imageFileService.saveImageFile(post1, path);
         }
     }
 

@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface FileUploadService {
 
-    void manageFile(Post post, List<MultipartFile> multipartFiles) throws Exception;
+    void uploadFile(Post post, List<MultipartFile> multipartFiles) throws Exception;
 }

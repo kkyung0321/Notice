@@ -2,11 +2,10 @@ package com.example.studywithme.post.application.entity;
 
 import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.member.application.entity.Member;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.example.studywithme.post.application.dto.PostRequest;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -60,5 +59,10 @@ public class Post {
 
     public void increaseHits() {
         this.hits += 1l;
+    }
+
+    public void updatePost(PostRequest postRequest) {
+        this.title = postRequest.getTitle();
+        this.content = postRequest.getContent();
     }
 }

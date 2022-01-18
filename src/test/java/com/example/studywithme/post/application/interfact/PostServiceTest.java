@@ -15,6 +15,7 @@ import com.example.studywithme.post.application.entity.Post;
 import com.example.studywithme.post.application.fileupload.interact.impl.FileUploadServiceImpl;
 import com.example.studywithme.post.application.interact.PostService;
 import com.example.studywithme.post.application.interact.impl.PostServiceImpl;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -47,9 +48,10 @@ public class PostServiceTest {
     @Autowired
     private PostRepository postRepository;
 
+    @DisplayName("로그인이 되어 있으면 글을 쓸 수 있다")
     @Test
     @Sql(scripts = "classpath:db/test/member.sql")
-    void should_create_post_if_member_is_logged_in() throws Exception {
+    void writePost() throws Exception {
         //Arrange
 
         Member member = memberRepository.findAll().get(0);
@@ -106,7 +108,7 @@ public class PostServiceTest {
 
     @Test
     @Sql(scripts = "classpath:db/test/post_associated_images.sql")
-    void should_read_post_and_associated_image_files() {
+    void readPost() {
         //Arrange
         Long pid = 1l;
 
