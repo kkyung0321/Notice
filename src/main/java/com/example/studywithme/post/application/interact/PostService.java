@@ -13,4 +13,6 @@ public interface PostService {
     PostResponse readPost(Long pid);
 
     void modifyPost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles, Long pid) throws Exception;
+
+    void deletePost(Long pid);
 }

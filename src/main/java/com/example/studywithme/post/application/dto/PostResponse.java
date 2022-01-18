@@ -40,7 +40,7 @@ public class PostResponse {
         this.createdDate = post.getCreatedDate();
         this.modifiedDate = post.getModifiedDate();
         this.username = post.getMember().getUsername();
-        this.nickname = post.getMember().getNickName();
+        this.nickname = post.getMember().getNickname();
         post.getImageFiles().forEach(imageFile -> this.imageFiles.add(imageFile));
     }
 

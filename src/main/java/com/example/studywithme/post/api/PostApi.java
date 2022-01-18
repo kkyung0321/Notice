@@ -53,4 +53,17 @@ public class PostApi {
 
         return ResponseEntity.ok(null);
     }
+
+    @DeleteMapping("/{pid}")
+    public ResponseEntity<Void> deletePost(@AuthenticationPrincipal UserDto userDto,
+                                           @NotNull @PathVariable Long pid,
+                                           @NotNull @RequestParam("username") String username) {
+        if (userDto.getUsername().equals(username))
+            postService.deletePost(pid);
+        else {
+            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        }
+
+        return ResponseEntity.ok(null);
+    }
 }
