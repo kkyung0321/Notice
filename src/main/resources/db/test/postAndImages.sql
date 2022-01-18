@@ -4,7 +4,7 @@ VALUES (1, 'path', NULL);
 INSERT INTO image_file (if_id, path, post_id)
 VALUES (2, 'path2', NULL);
 
-INSERT INTO member (mid, username, password, member_role, nick_name, login_date)
+INSERT INTO member (mid, username, password, member_role, nickname, login_date)
 VALUES (1, 'username', 'password', 'ROLE_USER', 'nickname', NULL);
 
 INSERT INTO post (pid, title, content, like_counts, hits, created_date, modified_date, member_id)

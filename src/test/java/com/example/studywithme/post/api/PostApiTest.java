@@ -3,6 +3,7 @@ package com.example.studywithme.post.api;
 import com.example.studywithme.global.auth.UserDto;
 import com.example.studywithme.global.error.exception.EntityNotFoundException;
 import com.example.studywithme.global.error.exception.ErrorCode;
+import com.example.studywithme.global.error.exception.InvalidValueException;
 import com.example.studywithme.imagefile.application.dao.ImageFileRepository;
 import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.member.application.dao.MemberRepository;
@@ -40,8 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @Transactional
@@ -246,6 +246,7 @@ public class PostApiTest {
                 .file(postRequestMultipart)
                 .file(multipartFile)
                 .file(multipartFile1)
+                .param("username", username)
                 .with(request -> {
                     request.setMethod(HttpMethod.PUT.name());
                     return request;
@@ -282,13 +283,54 @@ public class PostApiTest {
                 .contains(post);
     }
 
+    @DisplayName("로그인 유저와 글쓴이가 같지 않으면 예외를 던진다")
     @Test
-    void deletePost() {
+    @Sql(scripts = "classpath:db/test/postAndImages.sql")
+    void throwExceptionWhenDeletePost() throws Exception {
+
         //Arrange
+        Long pid = 1l;
+
+        UserDto userDto = new UserDto(getMember());
+
+        String username = "username1";
 
         //Act
+        mockMvc.perform(delete("/posts/{pid}", pid)
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(user(userDto))
+                .param("username", username))
+                .andExpect(result -> assertThat(result.getResolvedException() instanceof
+                        InvalidValueException).isTrue());
 
         //Assert
-        
+
+    }
+
+    @Test
+    @Sql(scripts = "classpath:db/test/postAndImages.sql")
+    void deletePost() throws Exception {
+        //Arrange
+        Long pid = 1l;
+
+        UserDto userDto = new UserDto(getMember());
+
+        String usename = "username";
+        //Act
+        mockMvc.perform(delete("/posts/{pid}", pid)
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(user(userDto))
+                .param("username", usename))
+                .andDo(print())
+                .andExpect(authenticated());
+
+        //Assert
+        List<Post> posts = postRepository.findAll();
+
+        assertThat(posts.size()).isEqualTo(0);
+
+        List<ImageFile> imageFiles = imageFileRepository.findAll();
+
+        assertThat(imageFiles.size()).isEqualTo(0);
     }
 }

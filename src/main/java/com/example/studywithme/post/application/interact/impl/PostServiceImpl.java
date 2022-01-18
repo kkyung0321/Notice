@@ -59,6 +59,11 @@ public class PostServiceImpl implements PostService {
         fileUploadService.uploadFile(post, multipartFiles);
     }
 
+    @Override
+    public void deletePost(Long pid) {
+        postRepository.deleteById(pid);
+    }
+
     private Post getPost(Long pid) {
         Post post = Optional.ofNullable(postRepository.findPostByPidJoinMemberAndImage(pid)).orElseThrow(
                 () -> {
