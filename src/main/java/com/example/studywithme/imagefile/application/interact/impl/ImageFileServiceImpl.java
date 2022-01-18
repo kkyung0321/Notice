@@ -20,8 +20,18 @@ public class ImageFileServiceImpl implements ImageFileService {
     private final ImageFileRepository imageFileRepository;
 
     public void saveImageFile(Post post, String path) {
+        Post post1 = getPost(post);
 
-        imageFileRepository.save(createImageFile(getPost(post), getPath(path)));
+        String path1 = getPath(path);
+
+        ImageFile imageFile = createImageFile(post1, path1);
+
+        imageFileRepository.save(imageFile);
+    }
+
+    @Override
+    public void deletePostAssociatedImageFiles(Long pid) {
+        imageFileRepository.deleteAllByPid(pid);
     }
 
     private ImageFile createImageFile(Post post, String path) {

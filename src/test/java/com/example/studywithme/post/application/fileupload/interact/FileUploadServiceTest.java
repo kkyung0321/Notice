@@ -7,6 +7,7 @@ import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.dto.PostRequest;
 import com.example.studywithme.post.application.entity.Post;
 import com.example.studywithme.post.application.fileupload.interact.impl.FileUploadServiceImpl;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -34,8 +35,9 @@ public class FileUploadServiceTest {
     @Autowired
     private PostRepository postRepository;
 
+    @DisplayName("파일을 업로드하고 데이터를 저장한다")
     @Test
-    void should_upload_files() throws Exception {
+    void manageFile() throws Exception {
         //Arrange
 
         Post post = getPost();
@@ -44,7 +46,7 @@ public class FileUploadServiceTest {
 
         //Act
         postRepository.save(post);
-        fileUploadService.manageFile(post, multipartFiles);
+        fileUploadService.uploadFile(post, multipartFiles);
 
         //Assert
         List<ImageFile> imageFiles = imageFileRepository.findAll();
