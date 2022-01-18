@@ -1,11 +1,10 @@
 package com.example.studywithme.member.application.entity;
 
 import com.example.studywithme.post.application.entity.Post;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -26,10 +25,18 @@ public class Member {
     @Column(name = "member_role")
     private String role;
 
-    private String nickName;
+    private String nickname;
 
     private String loginDate;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "member")
     private List<Post> posts = new ArrayList<>();
+
+    @Builder
+    public Member(String username, String password, String role, String nickname) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.nickname = nickname;
+    }
 }
