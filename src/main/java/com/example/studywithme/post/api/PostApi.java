@@ -7,13 +7,16 @@ import com.example.studywithme.post.application.dto.PostRequest;
 import com.example.studywithme.post.application.dto.PostResponse;
 import com.example.studywithme.post.application.interact.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @RestController
@@ -42,8 +45,8 @@ public class PostApi {
     public ResponseEntity<Void> modifyPost(@AuthenticationPrincipal UserDto userDto,
                                            @Valid @RequestPart("postRequest") PostRequest postRequest,
                                            @RequestPart(value = "multipartFiles", required = false) List<MultipartFile> multipartFiles,
-                                           @NotNull @PathVariable Long pid,
-                                           @NotNull @RequestParam("username") String username) throws Exception {
+                                           @PathVariable Long pid,
+                                           @RequestParam("username") String username) throws Exception {
 
         if (userDto.getUsername().equals(username))
             postService.modifyPost(userDto, postRequest, multipartFiles, pid);
@@ -56,8 +59,8 @@ public class PostApi {
 
     @DeleteMapping("/{pid}")
     public ResponseEntity<Void> deletePost(@AuthenticationPrincipal UserDto userDto,
-                                           @NotNull @PathVariable Long pid,
-                                           @NotNull @RequestParam("username") String username) {
+                                           @PathVariable Long pid,
+                                           @RequestParam("username") String username) {
         if (userDto.getUsername().equals(username))
             postService.deletePost(pid);
         else {
@@ -65,5 +68,14 @@ public class PostApi {
         }
 
         return ResponseEntity.ok(null);
+    }
+
+    @GetMapping("")
+    public ResponseEntity<Page<PostResponse>> readPosts(@PageableDefault(sort = "createdDate",
+            direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<PostResponse> response = postService.readPosts(pageable);
+
+        return ResponseEntity.ok(response);
     }
 }

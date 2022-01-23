@@ -23,9 +23,8 @@ public class ImageFile {
     private Post post;
 
     @Builder
-    public ImageFile(String path, Post post) {
+    public ImageFile(String path) {
         this.path = path;
-        this.post = post;
     }
 
     public void associateWithPost(Post post) {

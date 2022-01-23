@@ -9,5 +9,7 @@ public interface MemberService {
 
     void register(MemberRequest memberRequest);
 
-    MemberResponse readInfo(String username);
+    MemberResponse readInfo(Long mid);
+
+    void modifyInfo(MemberRequest memberRequest, Long mid);
 }

@@ -24,7 +24,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,22 +41,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @Transactional
 @SpringBootTest
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc
-public class PostApiTest {
+public class PostApiAcceptanceTest {
     @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private PostRepository postRepository;
-    @Autowired
     private WebApplicationContext webApplicationContext;
+
+    @Autowired
+    private PostRepository postRepository;
     @Autowired
     private MemberRepository memberRepository;
     @Autowired
@@ -64,9 +67,40 @@ public class PostApiTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
-                .apply(SecurityMockMvcConfigurers.springSecurity())
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
                 .build();
+    }
+
+    private void insertPosts() {
+        Member member = Member.builder().username("username")
+                .password(new BCryptPasswordEncoder().encode("password"))
+                .nickname("nickname")
+                .role("ROLE_USER")
+                .build();
+
+        memberRepository.save(member);
+
+        for (int i = 0; i < 33; i++) {
+            Post post = Post.builder()
+                    .title("title" + i)
+                    .content("content" + i)
+                    .hits(0L)
+                    .likeCounts(0L)
+                    .build();
+            postRepository.save(post);
+            post.associateWithMember(member);
+        }
+    }
+
+    private void insertMember() {
+        Member member = Member.builder().username("username")
+                .password(new BCryptPasswordEncoder().encode("password"))
+                .nickname("nickname")
+                .role("ROLE_USER")
+                .build();
+
+        memberRepository.save(member);
     }
 
     private Member getMember() {
@@ -96,10 +130,10 @@ public class PostApiTest {
 
     @DisplayName("로그인이 되어 있으면 글을 쓸 수 있다")
     @Test
-    @Sql(scripts = "classpath:db/test/member.sql")
     void writePost() throws Exception {
 
         //Arrange
+        insertMember();
         String title = "title";
         String content = "content";
 
@@ -118,7 +152,7 @@ public class PostApiTest {
                 .file(multipartFile2)
                 .with(user(userDto))
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
-                .andExpect(authenticated().withUsername("username1"))
+                .andExpect(authenticated().withUsername("username"))
                 .andDo(print());
 
         //Assert
@@ -332,5 +366,21 @@ public class PostApiTest {
         List<ImageFile> imageFiles = imageFileRepository.findAll();
 
         assertThat(imageFiles.size()).isEqualTo(0);
+    }
+
+    @Test
+    void readPosts() throws Exception {
+        //Arrange
+        insertPosts();
+
+        //Act
+        mockMvc.perform(get("/posts"))
+                .andDo(print())
+                .andExpect(jsonPath("$['number']").value(0))
+                .andExpect(jsonPath("$['size']").value(10))
+                .andExpect(jsonPath("$['totalElements']").value(33))
+                .andExpect(jsonPath("$['sort']['sorted']").value(true));
+
+        //Assert
     }
 }

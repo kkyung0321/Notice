@@ -1,68 +1,42 @@
 package com.example.studywithme.imagefile.application.interact;
 
 import com.example.studywithme.imagefile.application.dao.ImageFileRepository;
-import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.imagefile.application.interact.impl.ImageFileServiceImpl;
-import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.entity.Post;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @Transactional
-@DataJpaTest
 @ActiveProfiles("test")
-@Import({ImageFileServiceImpl.class})
+@ExtendWith(MockitoExtension.class)
 public class ImageFileServiceTest {
 
-    @Autowired
-    private ImageFileService imageFileService;
-    @Autowired
+    @Mock
     private ImageFileRepository imageFileRepository;
-    @Autowired
-    private PostRepository postRepository;
+    @InjectMocks
+    private ImageFileServiceImpl imageFileService;
 
     @Test
     void saveImageFile() {
         //Arrange
         Post post = createPost();
 
-        List<String> paths = getPaths();
+        String path = "path";
 
         //Act
-        postRepository.save(post);
-
-        for (String path : paths) {
-            imageFileService.saveImageFile(post, path);
-        }
+        imageFileService.saveImageFile(post, path);
 
         //Assert
-        List<ImageFile> imageFiles = imageFileRepository.findAll();
-        assertThat(imageFiles).hasAtLeastOneElementOfType(ImageFile.class);
-
-        // image <-> post 연관관계 확인
-        assertThat(imageFiles).usingRecursiveFieldByFieldElementComparator()
-                .extracting("post")
-                .contains(post);
-
-        assertThat(post.getImageFiles()).usingRecursiveComparison()
-                .isEqualTo(imageFiles);
-
-    }
-
-    private List<String> getPaths() {
-        List<String> paths = new ArrayList<>();
-        paths.add("path1");
-        paths.add("path2");
-        return paths;
+        verify(imageFileRepository, times(1)).save(any());
     }
 
     private Post createPost() {
@@ -71,12 +45,11 @@ public class ImageFileServiceTest {
         Long hits = 0L;
         Long likeCounts = 0L;
 
-        Post post = Post.builder()
+        return Post.builder()
                 .title(title)
                 .content(content)
                 .hits(hits)
                 .likeCounts(likeCounts)
                 .build();
-        return post;
     }
 }

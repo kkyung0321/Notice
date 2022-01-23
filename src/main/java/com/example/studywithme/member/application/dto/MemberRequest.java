@@ -6,13 +6,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberRequest {
+
+    @NotBlank(message = "아이디를 입력해주세요")
+    @Size(max = 30, message = "아이디는 30글자 이하로 입력해주세요")
     private String username;
 
+    @NotBlank(message = "비밀번호를 입력해주세요")
+    @Size(max = 30, message = "비밀번호는 30글자 이하로 입력해주세요")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[~!@#$%^&*])[A-Za-z\\d~!@#$%^&*]{8,}$")
     private String password;
 
+    @NotBlank(message = "닉네임을 입력해주세요")
+    @Size(max = 30, message = "닉네임은 30글자 이하로 입력해주세요")
     private String nickname;
 
     private Member toEntity() {

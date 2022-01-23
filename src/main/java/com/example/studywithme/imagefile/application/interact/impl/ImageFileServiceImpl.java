@@ -30,7 +30,7 @@ public class ImageFileServiceImpl implements ImageFileService {
     }
 
     @Override
-    public void deletePostAssociatedImageFiles(Long pid) {
+    public void deleteImageFilesByPid(Long pid) {
         imageFileRepository.deleteAllByPid(pid);
     }
 

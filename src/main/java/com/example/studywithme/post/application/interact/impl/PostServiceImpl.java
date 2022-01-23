@@ -11,6 +11,8 @@ import com.example.studywithme.post.application.entity.Post;
 import com.example.studywithme.post.application.fileupload.interact.FileUploadService;
 import com.example.studywithme.post.application.interact.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,18 +30,24 @@ public class PostServiceImpl implements PostService {
 
     private final ImageFileService imageFileService;
 
-
     @Override
-    public void writePost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles) throws Exception {
+    public void writePost(UserDto userDto, PostRequest postRequest,
+                          List<MultipartFile> multipartFiles) throws Exception {
         Post post = postRequest.getPost();
         post.associateWithMember(userDto.getMember());
+
+        if (multipartFiles != null) {
+            fileUploadService.uploadFile(post, multipartFiles);
+        }
+
         postRepository.save(post);
-        fileUploadService.uploadFile(post, multipartFiles);
     }
 
     @Override
     public PostResponse readPost(Long pid) {
-        Post post = getPost(pid);
+        Post post = Optional.ofNullable(postRepository.findPostByPid(pid)).orElseThrow(() -> {
+            throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
+        }).get();
 
         post.increaseHits();
 
@@ -48,11 +56,11 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public void modifyPost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles, Long pid) throws Exception {
-        imageFileService.deletePostAssociatedImageFiles(pid);
+        imageFileService.deleteImageFilesByPid(pid);
 
-        Post post = Optional.ofNullable(postRepository.findById(pid)).orElseThrow(() -> {
+        Post post = postRepository.findById(pid).orElseThrow(() -> {
             throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-        }).get();
+        });
 
         post.updatePost(postRequest);
 
@@ -64,11 +72,10 @@ public class PostServiceImpl implements PostService {
         postRepository.deleteById(pid);
     }
 
-    private Post getPost(Long pid) {
-        Post post = Optional.ofNullable(postRepository.findPostByPidJoinMemberAndImage(pid)).orElseThrow(
-                () -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
-        return post;
+    @Override
+    public Page<PostResponse> readPosts(Pageable pageable) {
+        List<Post> posts = postRepository.findAll();
+
+        return PostResponse.of(posts, pageable);
     }
 }

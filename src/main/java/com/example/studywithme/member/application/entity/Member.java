@@ -1,5 +1,6 @@
 package com.example.studywithme.member.application.entity;
 
+import com.example.studywithme.member.application.dto.MemberRequest;
 import com.example.studywithme.post.application.entity.Post;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -38,5 +39,9 @@ public class Member {
         this.password = password;
         this.role = role;
         this.nickname = nickname;
+    }
+
+    public void updateInfo(MemberRequest memberRequest) {
+        this.nickname = memberRequest.getNickname();
     }
 }

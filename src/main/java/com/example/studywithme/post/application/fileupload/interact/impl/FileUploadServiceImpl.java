@@ -26,12 +26,12 @@ public class FileUploadServiceImpl implements FileUploadService {
     @Override
     public void uploadFile(Post post, List<MultipartFile> multipartFiles) throws Exception {
 
-        Post post1 = getPost(post);
+        List<MultipartFile> multipartFileList = getMultipartFiles(multipartFiles);
 
-        for (MultipartFile file : getMultipartFiles(multipartFiles)) {
+        for (MultipartFile file : multipartFileList) {
             String path = uploadFileAndReturnFilePath(file);
 
-            imageFileService.saveImageFile(post1, path);
+            imageFileService.saveImageFile(post, path);
         }
     }
 
@@ -57,12 +57,6 @@ public class FileUploadServiceImpl implements FileUploadService {
 
     private List<MultipartFile> getMultipartFiles(List<MultipartFile> multipartFiles) {
         return Optional.ofNullable(multipartFiles).orElseThrow(() -> {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-        });
-    }
-
-    private Post getPost(Post post) {
-        return Optional.ofNullable(post).orElseThrow(() -> {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
         });
     }

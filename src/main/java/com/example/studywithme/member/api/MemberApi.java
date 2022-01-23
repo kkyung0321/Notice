@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -15,16 +15,24 @@ import javax.validation.constraints.NotNull;
 public class MemberApi {
     private final MemberService memberService;
 
-    @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody MemberRequest memberRequest) {
+    @PostMapping("")
+    public ResponseEntity<Void> register(@Valid @RequestBody MemberRequest memberRequest) {
         memberService.register(memberRequest);
         return ResponseEntity.ok(null);
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<MemberResponse> readInfo(@NotNull @PathVariable String username) {
+    @GetMapping("/{mid}")
+    public ResponseEntity<MemberResponse> readInfo(@PathVariable Long mid) {
 
-        MemberResponse memberResponse = memberService.readInfo(username);
+        MemberResponse memberResponse = memberService.readInfo(mid);
         return ResponseEntity.ok(memberResponse);
+    }
+
+    @PutMapping("/{mid}")
+    public ResponseEntity<Void> modifyInfo(@Valid @RequestBody MemberRequest memberRequest,
+                                           @PathVariable Long mid) {
+
+        memberService.modifyInfo(memberRequest, mid);
+        return ResponseEntity.ok(null);
     }
 }

@@ -1,126 +1,151 @@
 package com.example.studywithme.post.application.interfact;
 
 import com.example.studywithme.global.auth.UserDto;
-import com.example.studywithme.global.error.exception.EntityNotFoundException;
-import com.example.studywithme.global.error.exception.ErrorCode;
-import com.example.studywithme.imagefile.application.dao.ImageFileRepository;
 import com.example.studywithme.imagefile.application.entity.ImageFile;
-import com.example.studywithme.imagefile.application.interact.impl.ImageFileServiceImpl;
-import com.example.studywithme.member.application.dao.MemberRepository;
+import com.example.studywithme.imagefile.application.interact.ImageFileService;
 import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.post.application.dao.PostRepository;
 import com.example.studywithme.post.application.dto.PostRequest;
 import com.example.studywithme.post.application.dto.PostResponse;
 import com.example.studywithme.post.application.entity.Post;
-import com.example.studywithme.post.application.fileupload.interact.impl.FileUploadServiceImpl;
-import com.example.studywithme.post.application.interact.PostService;
+import com.example.studywithme.post.application.fileupload.interact.FileUploadService;
 import com.example.studywithme.post.application.interact.impl.PostServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @Transactional
 @ActiveProfiles("test")
-@DataJpaTest
-@Import({PostServiceImpl.class, FileUploadServiceImpl.class, ImageFileServiceImpl.class})
+@ExtendWith(MockitoExtension.class)
 public class PostServiceTest {
 
-    @Autowired
-    private ImageFileRepository imageFileRepository;
-    @Autowired
-    private PostService postService;
-    @Autowired
-    private MemberRepository memberRepository;
-    @Autowired
+    @Mock
+    private FileUploadService fileUploadService;
+    @Mock
+    private ImageFileService imageFileService;
+    @Mock
     private PostRepository postRepository;
+    @InjectMocks
+    private PostServiceImpl postService;
 
-    @DisplayName("로그인이 되어 있으면 글을 쓸 수 있다")
-    @Test
-    @Sql(scripts = "classpath:db/test/member.sql")
-    void writePost() throws Exception {
-        //Arrange
-
-        Member member = memberRepository.findAll().get(0);
-        UserDto userDto = new UserDto(member);
-
-        PostRequest postRequest = getPostRequest();
-
-        List<MultipartFile> multipartFiles = getMultipartFiles();
-
-        //Act
-        postService.writePost(userDto, postRequest, multipartFiles);
-
-        //Assert
-
-        List<Post> posts = Optional.ofNullable(postRepository.findAll())
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
-        Post post = posts.get(0);
-
-        List<ImageFile> imageFiles = Optional.ofNullable(imageFileRepository.findAll())
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
-
-        assertThat(imageFiles).hasAtLeastOneElementOfType(ImageFile.class);
-        assertThat(imageFiles).usingRecursiveFieldByFieldElementComparator()
-                .extracting("post")
-                .contains(post);
+    private PostRequest createPostRequest() {
+        return new PostRequest("title", "content");
     }
 
-    private PostRequest getPostRequest() {
-        String title = "title";
-        String content = "content";
+    private List<MultipartFile> createMultipartFiles() {
+        MockMultipartFile mockMultipartFile1 = new MockMultipartFile("hello1.txt", "",
+                MediaType.MULTIPART_FORM_DATA_VALUE, "hello world!".getBytes(StandardCharsets.UTF_8));
 
-        PostRequest postRequest = new PostRequest(title, content);
-        return postRequest;
-    }
-
-    private List<MultipartFile> getMultipartFiles() {
-        MockMultipartFile multipartFile1 = new MockMultipartFile(
-                "file1", "hello1.jpg", null, "hello world1".getBytes()
-        );
-
-        MockMultipartFile multipartFile2 = new MockMultipartFile(
-                "file2", "hello2.jpg", null, "hello world2".getBytes()
-        );
+        MockMultipartFile mockMultipartFile2 = new MockMultipartFile("hello2.txt", "",
+                MediaType.MULTIPART_FORM_DATA_VALUE, "hello world2!".getBytes(StandardCharsets.UTF_8));
 
         List<MultipartFile> multipartFiles = new ArrayList<>();
-        multipartFiles.add(multipartFile1);
-        multipartFiles.add(multipartFile2);
+        multipartFiles.add(mockMultipartFile1);
+        multipartFiles.add(mockMultipartFile2);
+
         return multipartFiles;
     }
 
+    private Post createPost() {
+        Post post = Post.builder()
+                .title("title")
+                .content("content")
+                .hits(0L)
+                .likeCounts(0L)
+                .build();
+
+        return post;
+    }
+
+    private List<ImageFile> createImageFile() {
+        ImageFile imageFile = ImageFile.builder()
+                .path("path")
+                .build();
+
+        ImageFile imageFile1 = ImageFile.builder().path("path2").build();
+
+        List<ImageFile> imageFiles = new ArrayList<>();
+        imageFiles.add(imageFile);
+        imageFiles.add(imageFile1);
+
+        return imageFiles;
+    }
+
+    private Member createMember() {
+        Member member = Member.builder()
+                .username("username")
+                .password("password")
+                .nickname("nickname")
+                .role("ROLE_USER")
+                .build();
+
+        return member;
+    }
+
+    @DisplayName("이미지 없이 글을 저장한다")
     @Test
-    @Sql(scripts = "classpath:db/test/post_associated_images.sql")
+    void writePost() throws Exception {
+        //Arrange
+        PostRequest postRequest = createPostRequest();
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+
+        //Act
+        postService.writePost(userDto, postRequest, null);
+
+        //Assert
+        assertThat(member.getPosts().size()).isEqualTo(1);
+        verify(postRepository, times(1)).save(any());
+        verify(fileUploadService, times(0)).uploadFile(any(), anyList());
+    }
+
+    @DisplayName("이미지와 함께 게시글을 조회한다")
+    @Test
     void readPost() {
         //Arrange
-        Long pid = 1l;
+        Post post = createPost();
+        Member member = createMember();
+        post.associateWithMember(member);
+        List<ImageFile> imageFiles = createImageFile();
+        for (ImageFile imageFile : imageFiles) {
+            imageFile.associateWithPost(post);
+        }
+        Long pid = post.getPid();
+
+        given(postRepository.findPostByPid(pid)).willReturn(Optional.ofNullable(post));
 
         //Act
         PostResponse postResponse = postService.readPost(pid);
 
         // Assert
-        assertThat(postResponse.getPid()).isEqualTo(pid);
-        assertThat(postResponse.getNickname()).isEqualTo("nickname");
+        assertThat(postResponse.getPid()).isEqualTo(post.getPid());
+        assertThat(postResponse.getTitle()).isEqualTo(post.getTitle());
+        assertThat(postResponse.getContent()).isEqualTo(post.getContent());
+        assertThat(postResponse.getLikeCounts()).isEqualTo(post.getLikeCounts());
+        assertThat(postResponse.getHits()).isEqualTo(post.getHits());
+        assertThat(postResponse.getUsername()).isEqualTo(post.getMember().getUsername());
+        assertThat(postResponse.getNickname()).isEqualTo(post.getMember().getNickname());
         assertThat(postResponse.getImageFiles()).usingRecursiveFieldByFieldElementComparator()
-                .extracting("path")
-                .containsAll(Arrays.asList("path", "path2"));
-        assertThat(postResponse.getHits()).isEqualTo(1l);
+                .containsAll(post.getImageFiles());
     }
 }

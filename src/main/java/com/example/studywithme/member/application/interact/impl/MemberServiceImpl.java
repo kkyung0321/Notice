@@ -2,6 +2,7 @@ package com.example.studywithme.member.application.interact.impl;
 
 import com.example.studywithme.global.error.exception.EntityNotFoundException;
 import com.example.studywithme.global.error.exception.ErrorCode;
+import com.example.studywithme.global.error.exception.InvalidValueException;
 import com.example.studywithme.member.application.dao.MemberRepository;
 import com.example.studywithme.member.application.dto.MemberRequest;
 import com.example.studywithme.member.application.dto.MemberResponse;
@@ -19,22 +20,42 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Member findByUsername(String username) {
-        Member member = getMember(username);
-
-        return member;
+        return getMember(username);
     }
 
     @Override
     public void register(MemberRequest memberRequest) {
-        Member member = memberRequest.getMember();
-        memberRepository.save(member);
+        if (memberRepository.findByUsername(memberRequest.getUsername()).isPresent() ||
+                memberRepository.findByNickname(memberRequest.getNickname()).isPresent())
+            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        else {
+            Member member = memberRequest.getMember();
+            memberRepository.save(member);
+        }
     }
 
     @Override
-    public MemberResponse readInfo(String username) {
-        Member member = getMember(username);
+    public MemberResponse readInfo(Long mid) {
+        Member member = getMember(mid);
 
         return MemberResponse.of(member);
+    }
+
+    @Override
+    public void modifyInfo(MemberRequest memberRequest, Long mid) {
+        if (memberRepository.findByNickname(memberRequest.getNickname()).isPresent())
+            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        else {
+            Member member = getMember(mid);
+
+            member.updateInfo(memberRequest);
+        }
+    }
+
+    private Member getMember(Long mid) {
+        return memberRepository.findById(mid).orElseThrow(() -> {
+            throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
+        });
     }
 
     private Member getMember(String username) {
