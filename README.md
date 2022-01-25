@@ -11,4 +11,4 @@
 * GitHub Flow 를 적용하여 코드를 관리 하였습니다.   
 * OOP에 근거하여 설계를 하였습니다.
 * TDD를 적용하여 유지 보수가 용이한 코드를 구현했습니다.
-* Jenkins 및 Docker
+* Jenkins 및 Docker를 사용하여 CI를 하였습니다.
