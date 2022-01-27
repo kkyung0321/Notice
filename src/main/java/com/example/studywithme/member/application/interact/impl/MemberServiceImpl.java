@@ -72,6 +72,6 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Page<ReplyResponse> readMyReplies(UserDto userDto, Pageable pageable) {
         Member member = userDto.getMember();
-        return replyService.readMyPosts(member, pageable);
+        return replyService.readMyReplies(member, pageable);
     }
 }

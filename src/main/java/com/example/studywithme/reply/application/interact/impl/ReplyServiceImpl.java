@@ -56,4 +56,10 @@ public class ReplyServiceImpl implements ReplyService {
         List<Reply> replies = replyRepository.findAllByPid(pid);
         return ReplyResponse.of(replies, pageable);
     }
+
+    @Override
+    public Page<ReplyResponse> readMyReplies(Member member, Pageable pageable) {
+        List<Reply> replies = replyRepository.findAllByMember(member);
+        return ReplyResponse.of(replies, pageable);
+    }
 }

@@ -60,7 +60,7 @@ public class ReplyApi {
     @GetMapping("")
     public ResponseEntity<Page<ReplyResponse>> readReplies(@RequestParam("pid") Long pid,
                                                            @PageableDefault(sort = "createdDate",
-                                                           direction = Sort.Direction.DESC) Pageable pageable) {
+                                                                   direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<ReplyResponse> replies = replyService.readReplies(pid, pageable);
         return ResponseEntity.ok(replies);
