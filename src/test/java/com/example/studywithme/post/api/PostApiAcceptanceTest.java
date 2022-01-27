@@ -1,7 +1,6 @@
 package com.example.studywithme.post.api;
 
 import com.example.studywithme.global.auth.UserDto;
-import com.example.studywithme.global.error.exception.EntityNotFoundException;
 import com.example.studywithme.global.error.exception.ErrorCode;
 import com.example.studywithme.global.error.exception.InvalidValueException;
 import com.example.studywithme.imagefile.application.dao.ImageFileRepository;
@@ -26,16 +25,15 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -72,14 +70,8 @@ public class PostApiAcceptanceTest {
                 .build();
     }
 
-    private void insertPosts() {
-        Member member = Member.builder().username("username")
-                .password(new BCryptPasswordEncoder().encode("password"))
-                .nickname("nickname")
-                .role("ROLE_USER")
-                .build();
-
-        memberRepository.save(member);
+    private List<Post> createPosts() {
+        List<Post> posts = new ArrayList<>();
 
         for (int i = 0; i < 33; i++) {
             Post post = Post.builder()
@@ -88,27 +80,31 @@ public class PostApiAcceptanceTest {
                     .hits(0L)
                     .likeCounts(0L)
                     .build();
-            postRepository.save(post);
-            post.associateWithMember(member);
+
+            Post save = postRepository.save(post);
+            posts.add(save);
         }
+        return posts;
     }
 
-    private void insertMember() {
+    private Post createPost() {
+        Post post = Post.builder().title("title")
+                .content("content")
+                .hits(0l)
+                .likeCounts(0l)
+                .build();
+
+        return postRepository.save(post);
+    }
+
+    private Member createMember() {
         Member member = Member.builder().username("username")
                 .password(new BCryptPasswordEncoder().encode("password"))
                 .nickname("nickname")
                 .role("ROLE_USER")
                 .build();
 
-        memberRepository.save(member);
-    }
-
-    private Member getMember() {
-        Member member = Optional.ofNullable(memberRepository.findById(1l))
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                }).get();
-        return member;
+        return memberRepository.save(member);
     }
 
     private MockMultipartFile getMultipartFile(String originalName, String contentName) {
@@ -128,12 +124,19 @@ public class PostApiAcceptanceTest {
         return postRequestFile;
     }
 
+    private ImageFile createImageFile() {
+        ImageFile imageFile = ImageFile.builder().path("path")
+                .build();
+
+        return imageFileRepository.save(imageFile);
+    }
+
     @DisplayName("로그인이 되어 있으면 글을 쓸 수 있다")
     @Test
     void writePost() throws Exception {
 
         //Arrange
-        insertMember();
+        Member member = createMember();
         String title = "title";
         String content = "content";
 
@@ -143,7 +146,7 @@ public class PostApiAcceptanceTest {
 
         MockMultipartFile multipartFile2 = getMultipartFile("hello2.txt", "hello world2");
 
-        UserDto userDto = new UserDto(getMember());
+        UserDto userDto = new UserDto(member);
 
         //Act
         mockMvc.perform(multipart("/posts")
@@ -152,42 +155,29 @@ public class PostApiAcceptanceTest {
                 .file(multipartFile2)
                 .with(user(userDto))
                 .contentType(MediaType.MULTIPART_FORM_DATA_VALUE))
-                .andExpect(authenticated().withUsername("username"))
+                .andExpect(authenticated())
                 .andDo(print());
 
         //Assert
-        // post 입력값 검증
-        List<Post> posts = Optional.ofNullable(postRepository.findAll())
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
+        List<Post> posts = postRepository.findAll();
+        List<ImageFile> imageFiles = imageFileRepository.findAll();
 
         assertThat(posts).usingRecursiveFieldByFieldElementComparator()
-                .extracting(title, content, "likeCounts", "hits")
-                .contains(tuple(title, content, 0L, 0L));
-
-        // member - post 연관관계 검증
-        Post post = posts.get(0);
-        assertThat(post.getMember()).isEqualTo(getMember());
-        assertThat(getMember().getPosts().get(0)).isEqualTo(post);
-
-        // 업로드 파일 검증
-        List<ImageFile> imageFiles = Optional.ofNullable(imageFileRepository.findAll())
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
-
-        assertThat(imageFiles).hasAtLeastOneElementOfType(ImageFile.class);
-        assertThat(imageFiles).usingRecursiveFieldByFieldElementComparator()
-                .extracting("post")
-                .contains(post);
+                .extracting("title", "content", "likeCounts", "hits", "member", "imageFiles")
+                .contains(tuple(title, content, 0L, 0L, member, imageFiles));
     }
 
     @Test
-    @Sql(scripts = "classpath:db/test/postAndImages.sql")
     void readPost() throws Exception {
         //Arrange
-        Long pid = 1l;
+        Post post = createPost();
+        Long pid = post.getPid();
+
+        Member member = createMember();
+        member.updatePost(post);
+
+        ImageFile imageFile = createImageFile();
+        post.updateImageFile(imageFile);
 
         //Act
         MockHttpServletResponse response = mockMvc.perform(get("/posts/{pid}", pid))
@@ -195,29 +185,31 @@ public class PostApiAcceptanceTest {
                 .andReturn().getResponse();
 
         //Assert
-        // post, fetch join member, fetch join images , hits 증가 확인
         PostResponse postResponse = objectMapper.readValue(response.getContentAsString(), PostResponse.class);
+
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(postResponse));
-
         assertThat(postResponse.getPid()).isEqualTo(pid);
-
+        assertThat(postResponse.getTitle()).isEqualTo("title");
         assertThat(postResponse.getNickname()).isEqualTo("nickname");
-
         assertThat(postResponse.getImageFiles()).usingRecursiveFieldByFieldElementComparator()
                 .extracting("path")
-                .containsAll(Arrays.asList("path", "path2"));
-
+                .containsAll(Arrays.asList("path"));
         assertThat(postResponse.getHits()).isEqualTo(1l);
     }
 
     @DisplayName("로그인 유저와 글쓴이가 같지 않으면 예외를 던진다")
     @Test
-    @Sql(scripts = {"classpath:db/test/postAndImages.sql"})
     void throwExceptionWhenModifyPost() throws Exception {
         //Arrange
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+        String username = "username1";
+
+        Post post = createPost();
+        Long pid = post.getPid();
+
         String modified_title = "modified title";
         String modified_content = "modified content";
-
         MockMultipartFile postRequestMultipart = getPostRequestMultipart(modified_title, modified_content);
 
         String originalName = "modified_hello1.txt";
@@ -227,12 +219,6 @@ public class PostApiAcceptanceTest {
         String originalName2 = "modified_hello2.txt";
         String contentName2 = "modified hello world2";
         MockMultipartFile multipartFile1 = getMultipartFile(originalName2, contentName2);
-
-        Long pid = 1l;
-
-        UserDto userDto = new UserDto(getMember());
-
-        String username = "username1";
 
         //Act
         mockMvc.perform(multipart("/posts/{pid}", pid)
@@ -254,12 +240,17 @@ public class PostApiAcceptanceTest {
 
     @DisplayName("로그인 유저와 글쓴이가 같으면 수정을 한다")
     @Test
-    @Sql(scripts = {"classpath:db/test/postAndImages.sql"})
     void modifyPost() throws Exception {
         //Arrange
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+        String username = member.getUsername();
+
+        Post post = createPost();
+        Long pid = post.getPid();
+
         String modified_title = "modified title";
         String modified_content = "modified content";
-
         MockMultipartFile postRequestMultipart = getPostRequestMultipart(modified_title, modified_content);
 
         String originalName = "modified_hello1.txt";
@@ -270,11 +261,6 @@ public class PostApiAcceptanceTest {
         String contentName2 = "modified hello world2";
         MockMultipartFile multipartFile1 = getMultipartFile(originalName2, contentName2);
 
-        Long pid = 1l;
-
-        UserDto userDto = new UserDto(getMember());
-
-        String username = "username";
         //Act
         mockMvc.perform(multipart("/posts/{pid}", pid)
                 .file(postRequestMultipart)
@@ -292,42 +278,25 @@ public class PostApiAcceptanceTest {
 
         //Assert
         List<Post> posts = postRepository.findAll();
+        List<ImageFile> imageFiles = imageFileRepository.findAll();
 
-        // post 가 변경되었는지 확인
         assertThat(posts).usingRecursiveFieldByFieldElementComparator()
-                .extracting("title", "content")
-                .contains(tuple(modified_title, modified_content));
-
-        // member - post 연관관계 검증
-        Post post = posts.get(0);
-        assertThat(post.getMember()).isEqualTo(getMember());
-        assertThat(getMember().getPosts().get(0)).isEqualTo(post);
-
-        // 업로드 파일 검증
-        List<ImageFile> imageFiles = Optional.ofNullable(imageFileRepository.findAll())
-                .orElseThrow(() -> {
-                    throw new EntityNotFoundException(ErrorCode.ENTITY_NOT_FOUND.getMessage());
-                });
-
-        assertThat(imageFiles).hasAtLeastOneElementOfType(ImageFile.class);
-
-        // post - images 연관관계 검 증
-        assertThat(imageFiles).usingRecursiveFieldByFieldElementComparator()
-                .extracting("post")
-                .contains(post);
+                .extracting("title", "content", "imageFiles")
+                .contains(tuple(modified_title, modified_content, imageFiles));
     }
 
     @DisplayName("로그인 유저와 글쓴이가 같지 않으면 예외를 던진다")
     @Test
-    @Sql(scripts = "classpath:db/test/postAndImages.sql")
     void throwExceptionWhenDeletePost() throws Exception {
 
         //Arrange
-        Long pid = 1l;
-
-        UserDto userDto = new UserDto(getMember());
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
 
         String username = "username1";
+
+        Post post = createPost();
+        Long pid = post.getPid();
 
         //Act
         mockMvc.perform(delete("/posts/{pid}", pid)
@@ -336,42 +305,42 @@ public class PostApiAcceptanceTest {
                 .param("username", username))
                 .andExpect(result -> assertThat(result.getResolvedException() instanceof
                         InvalidValueException).isTrue());
-
-        //Assert
-
     }
 
     @Test
-    @Sql(scripts = "classpath:db/test/postAndImages.sql")
     void deletePost() throws Exception {
         //Arrange
-        Long pid = 1l;
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+        String username = member.getUsername();
 
-        UserDto userDto = new UserDto(getMember());
+        Post post = createPost();
+        Long pid = post.getPid();
 
-        String usename = "username";
         //Act
         mockMvc.perform(delete("/posts/{pid}", pid)
                 .contentType(MediaType.APPLICATION_JSON)
                 .with(user(userDto))
-                .param("username", usename))
+                .param("username", username))
                 .andDo(print())
                 .andExpect(authenticated());
 
         //Assert
-        List<Post> posts = postRepository.findAll();
-
-        assertThat(posts.size()).isEqualTo(0);
-
-        List<ImageFile> imageFiles = imageFileRepository.findAll();
-
-        assertThat(imageFiles.size()).isEqualTo(0);
+        boolean present = postRepository.findById(pid).isPresent();
+        assertThat(present).isFalse();
     }
 
+    @DisplayName("검색어 없이 모든 게시물을 조회한다")
     @Test
     void readPosts() throws Exception {
         //Arrange
-        insertPosts();
+        List<Post> posts = createPosts();
+
+        Member member = createMember();
+
+        for (Post post : posts) {
+            member.updatePost(post);
+        }
 
         //Act
         mockMvc.perform(get("/posts"))
@@ -380,7 +349,47 @@ public class PostApiAcceptanceTest {
                 .andExpect(jsonPath("$['size']").value(10))
                 .andExpect(jsonPath("$['totalElements']").value(33))
                 .andExpect(jsonPath("$['sort']['sorted']").value(true));
+    }
 
-        //Assert
+    @DisplayName("검색으로 게시물을 조회한다")
+    @Test
+    void read_posts_using_search() throws Exception {
+        //Arrange
+        Post post = createPost();
+
+        String search = post.getTitle();
+        Member member = createMember();
+
+        member.updatePost(post);
+
+        //Act
+        mockMvc.perform(get("/posts")
+                .param("search", search))
+                .andDo(print())
+                .andExpect(jsonPath("$['number']").value(0))
+                .andExpect(jsonPath("$['size']").value(10))
+                .andExpect(jsonPath("$['totalElements']").value(1))
+                .andExpect(jsonPath("$['sort']['sorted']").value(true))
+                .andExpect(jsonPath("$..['title']").value(search));
+    }
+
+    @DisplayName("검색을 했을 때 게시물이 존재하지 않는다")
+    @Test
+    void read_zero_posts_using_search() throws Exception {
+        //Arrange
+        Post post = createPost();
+
+        String search = "abcd";
+        Member member = createMember();
+
+        member.updatePost(post);
+
+        //Act
+        mockMvc.perform(get("/posts")
+                .param("search", search))
+                .andDo(print())
+                .andExpect(jsonPath("$['number']").value(0))
+                .andExpect(jsonPath("$['totalElements']").value(0))
+                .andExpect(jsonPath("$..content.length()").value(0));
     }
 }

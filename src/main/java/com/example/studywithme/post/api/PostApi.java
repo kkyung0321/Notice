@@ -48,33 +48,32 @@ public class PostApi {
                                            @PathVariable Long pid,
                                            @RequestParam("username") String username) throws Exception {
 
-        if (userDto.getUsername().equals(username))
+        if (userDto.getUsername().equals(username)) {
             postService.modifyPost(userDto, postRequest, multipartFiles, pid);
-        else {
+            return ResponseEntity.ok(null);
+        } else {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
         }
-
-        return ResponseEntity.ok(null);
     }
 
     @DeleteMapping("/{pid}")
     public ResponseEntity<Void> deletePost(@AuthenticationPrincipal UserDto userDto,
                                            @PathVariable Long pid,
                                            @RequestParam("username") String username) {
-        if (userDto.getUsername().equals(username))
+        if (userDto.getUsername().equals(username)) {
             postService.deletePost(pid);
-        else {
+            return ResponseEntity.ok(null);
+        } else {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
         }
-
-        return ResponseEntity.ok(null);
     }
 
     @GetMapping("")
-    public ResponseEntity<Page<PostResponse>> readPosts(@PageableDefault(sort = "createdDate",
+    public ResponseEntity<Page<PostResponse>> readPosts(@RequestParam(name = "search",
+            required = false) String search, @PageableDefault(sort = "createdDate",
             direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<PostResponse> response = postService.readPosts(pageable);
+        Page<PostResponse> response = postService.readPosts(search, pageable);
 
         return ResponseEntity.ok(response);
     }

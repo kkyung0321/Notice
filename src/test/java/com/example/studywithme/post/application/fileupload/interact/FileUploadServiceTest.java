@@ -62,16 +62,11 @@ public class FileUploadServiceTest {
     }
 
     private Post createPost() {
-        String title = "title";
-        String content = "content";
-        Long hits = 0L;
-        Long likeCounts = 0L;
-
         return Post.builder()
-                .title(title)
-                .content(content)
-                .hits(hits)
-                .likeCounts(likeCounts)
+                .title("title")
+                .content("content")
+                .hits(0L)
+                .likeCounts(0L)
                 .build();
     }
 }
