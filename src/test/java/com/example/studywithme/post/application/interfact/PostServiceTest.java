@@ -125,10 +125,10 @@ public class PostServiceTest {
         //Arrange
         Post post = createPost();
         Member member = createMember();
-        post.associateWithMember(member);
+        member.updatePost(post);
         List<ImageFile> imageFiles = createImageFile();
         for (ImageFile imageFile : imageFiles) {
-            imageFile.associateWithPost(post);
+            post.updateImageFile(imageFile);
         }
         Long pid = post.getPid();
 

@@ -1,8 +1,10 @@
 package com.example.studywithme.post.application.interact;
 
 import com.example.studywithme.global.auth.UserDto;
+import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.post.application.dto.PostRequest;
 import com.example.studywithme.post.application.dto.PostResponse;
+import com.example.studywithme.post.application.entity.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,5 +20,9 @@ public interface PostService {
 
     void deletePost(Long pid);
 
-    Page<PostResponse> readPosts(Pageable pageable);
+    Page<PostResponse> readPosts(String search, Pageable pageable);
+
+    Post getPost(Long pid);
+
+    Page<PostResponse> readMyPosts(Member member, Pageable pageable);
 }

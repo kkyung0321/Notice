@@ -1,7 +1,5 @@
 package com.example.studywithme.post.application.fileupload.interact.impl;
 
-import com.example.studywithme.global.error.exception.ErrorCode;
-import com.example.studywithme.global.error.exception.InvalidValueException;
 import com.example.studywithme.imagefile.application.interact.ImageFileService;
 import com.example.studywithme.post.application.entity.Post;
 import com.example.studywithme.post.application.fileupload.interact.FileUploadService;
@@ -25,8 +23,7 @@ public class FileUploadServiceImpl implements FileUploadService {
 
     @Override
     public void uploadFile(Post post, List<MultipartFile> multipartFiles) throws Exception {
-
-        List<MultipartFile> multipartFileList = getMultipartFiles(multipartFiles);
+        List<MultipartFile> multipartFileList = Optional.ofNullable(multipartFiles).orElseThrow();
 
         for (MultipartFile file : multipartFileList) {
             String path = uploadFileAndReturnFilePath(file);
@@ -36,7 +33,7 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     private String uploadFileAndReturnFilePath(MultipartFile file) throws IOException {
-        MultipartFile file1 = getMultipartFile(file);
+        MultipartFile file1 = Optional.ofNullable(file).orElseThrow();
 
         String prefix = file1.getOriginalFilename()
                 .substring(file1.getOriginalFilename().lastIndexOf("."));
@@ -46,19 +43,6 @@ public class FileUploadServiceImpl implements FileUploadService {
         File dest = new File(path);
         file.transferTo(dest);
         return path;
-    }
-
-    private MultipartFile getMultipartFile(MultipartFile file) {
-        MultipartFile file1 = Optional.ofNullable(file).orElseThrow(() -> {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-        });
-        return file1;
-    }
-
-    private List<MultipartFile> getMultipartFiles(List<MultipartFile> multipartFiles) {
-        return Optional.ofNullable(multipartFiles).orElseThrow(() -> {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-        });
     }
 
     private String getUploadPath() {

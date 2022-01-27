@@ -1,7 +1,5 @@
 package com.example.studywithme.imagefile.application.interact.impl;
 
-import com.example.studywithme.global.error.exception.ErrorCode;
-import com.example.studywithme.global.error.exception.InvalidValueException;
 import com.example.studywithme.imagefile.application.dao.ImageFileRepository;
 import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.imagefile.application.interact.ImageFileService;
@@ -20,9 +18,9 @@ public class ImageFileServiceImpl implements ImageFileService {
     private final ImageFileRepository imageFileRepository;
 
     public void saveImageFile(Post post, String path) {
-        Post post1 = getPost(post);
+        Post post1 = Optional.ofNullable(post).orElseThrow();
 
-        String path1 = getPath(path);
+        String path1 = Optional.ofNullable(path).orElseThrow();
 
         ImageFile imageFile = createImageFile(post1, path1);
 
@@ -35,25 +33,12 @@ public class ImageFileServiceImpl implements ImageFileService {
     }
 
     private ImageFile createImageFile(Post post, String path) {
-
         ImageFile imageFile = ImageFile.builder()
                 .path(path)
                 .build();
 
-        imageFile.associateWithPost(post);
+        post.updateImageFile(imageFile);
 
         return imageFile;
-    }
-
-    private String getPath(String path) {
-        return Optional.ofNullable(path).orElseThrow(() -> {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-        });
-    }
-
-    private Post getPost(Post post) {
-        return Optional.ofNullable(post).orElseThrow(() -> {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-        });
     }
 }

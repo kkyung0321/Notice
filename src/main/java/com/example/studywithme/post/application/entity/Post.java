@@ -3,6 +3,7 @@ package com.example.studywithme.post.application.entity;
 import com.example.studywithme.imagefile.application.entity.ImageFile;
 import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.post.application.dto.PostRequest;
+import com.example.studywithme.reply.application.entity.Reply;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,17 +45,15 @@ public class Post {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "post")
     private List<ImageFile> imageFiles = new ArrayList<>();
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "post")
+    private List<Reply> replies = new ArrayList<>();
+
     @Builder
     public Post(String title, String content, Long likeCounts, Long hits) {
         this.title = title;
         this.content = content;
         this.likeCounts = likeCounts;
         this.hits = hits;
-    }
-
-    public void associateWithMember(Member member) {
-        this.member = member;
-        member.getPosts().add(this);
     }
 
     public void increaseHits() {
@@ -64,5 +63,19 @@ public class Post {
     public void updatePost(PostRequest postRequest) {
         this.title = postRequest.getTitle();
         this.content = postRequest.getContent();
+    }
+
+    public void updateMember(Member member) {
+        this.member = member;
+    }
+
+    public void updateReply(Reply reply) {
+        this.replies.add(reply);
+        reply.updatePost(this);
+    }
+
+    public void updateImageFile(ImageFile imageFile) {
+        this.imageFiles.add(imageFile);
+        imageFile.updatePost(this);
     }
 }
