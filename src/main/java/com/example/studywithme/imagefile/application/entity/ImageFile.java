@@ -28,8 +28,7 @@ public class ImageFile {
         this.post = post;
     }
 
-    public void associateWithPost(Post post) {
+    public void updatePost(Post post) {
         this.post = post;
-        post.getImageFiles().add(this);
     }
 }

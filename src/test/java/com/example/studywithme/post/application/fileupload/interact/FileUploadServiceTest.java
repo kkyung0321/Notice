@@ -70,13 +70,12 @@ public class FileUploadServiceTest {
         return multipartFiles;
     }
 
-    private Post getPost() {
-        String title = "title";
-        String content = "content";
-
-        PostRequest postRequest = new PostRequest(title, content);
-
-        Post post = postRequest.toEntity();
-        return post;
+    private Post createPost() {
+        return Post.builder()
+                .title("title")
+                .content("content")
+                .hits(0L)
+                .likeCounts(0L)
+                .build();
     }
 }

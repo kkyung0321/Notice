@@ -110,7 +110,14 @@ public class PostServiceTest {
     @Sql(scripts = "classpath:db/test/post_associated_images.sql")
     void readPost() {
         //Arrange
-        Long pid = 1l;
+        Post post = createPost();
+        Member member = createMember();
+        member.updatePost(post);
+        List<ImageFile> imageFiles = createImageFile();
+        for (ImageFile imageFile : imageFiles) {
+            post.updateImageFile(imageFile);
+        }
+        Long pid = post.getPid();
 
         //Act
         PostResponse postResponse = postService.readPost(pid);
