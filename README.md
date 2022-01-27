@@ -12,3 +12,7 @@
 * 단순 기능 구현보다 OOP에 근거하여 코드의 질을 향상시켰습니다.
 * TDD를 적용하여 유지 보수가 용이한 코드를 구현했습니다.
 * Jenkins 및 Docker를 사용하여 CI를 하였습니다.
+
+### Wiki
+
+* 프로토 타입(카카오 오븐으로 대체), 유스케이스는 [Wiki](https://github.com/kkyung0321/Notice/wiki) 참조
