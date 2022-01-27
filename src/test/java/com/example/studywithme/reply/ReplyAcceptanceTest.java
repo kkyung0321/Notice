@@ -77,7 +77,6 @@ public class ReplyAcceptanceTest {
         assertThat(replies).usingRecursiveFieldByFieldElementComparator()
                 .extracting("post")
                 .contains(post);
-
     }
 
     @Test
@@ -158,14 +157,13 @@ public class ReplyAcceptanceTest {
                 .andExpect(jsonPath("$['sort']['sorted']").value(true))
                 .andExpect(jsonPath("$..mid").isNotEmpty())
                 .andExpect(jsonPath("$..pid").isNotEmpty());
-
     }
 
     private List<Reply> createReplies() {
         List<Reply> replies = new ArrayList<>();
 
         for (int i = 0; i < 33; i++) {
-            Reply reply = Reply.builder().content("reply content"+i).build();
+            Reply reply = Reply.builder().content("reply content" + i).build();
             Reply save = replyRepository.save(reply);
             replies.add(save);
         }

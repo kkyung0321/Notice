@@ -17,7 +17,8 @@ import javax.persistence.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class Reply {
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue
     private Long rid;
 
     private String content;
