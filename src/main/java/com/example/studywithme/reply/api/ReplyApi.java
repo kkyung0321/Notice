@@ -65,4 +65,12 @@ public class ReplyApi {
         Page<ReplyResponse> replies = replyService.readReplies(pid, pageable);
         return ResponseEntity.ok(replies);
     }
+
+    @GetMapping("/members")
+    public ResponseEntity<Page<ReplyResponse>> readMyReplies(@AuthenticationPrincipal UserDto userDto,
+                                                             @PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC)
+                                                                     Pageable pageable) {
+        Page<ReplyResponse> replyResponses = replyService.readMyReplies(userDto, pageable);
+        return ResponseEntity.ok(replyResponses);
+    }
 }

@@ -1,5 +1,9 @@
 package com.example.studywithme.reply.interact;
 
+import com.example.studywithme.global.auth.UserDto;
+import com.example.studywithme.member.application.entity.Member;
+import com.example.studywithme.post.application.entity.Post;
+import com.example.studywithme.post.application.interact.PostService;
 import com.example.studywithme.reply.application.dao.ReplyRepository;
 import com.example.studywithme.reply.application.dto.ReplyRequest;
 import com.example.studywithme.reply.application.dto.ReplyResponse;
@@ -21,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -32,8 +37,56 @@ public class ReplyServiceTest {
     @Mock
     private ReplyRepository replyRepository;
 
+    @Mock
+    private PostService postService;
+
     @InjectMocks
     private ReplyServiceImpl replyService;
+
+    private Post createPost() {
+        return Post.builder().title("title")
+                .content("content")
+                .likeCounts(0l)
+                .hits(0l)
+                .build();
+    }
+
+    private Member createMember() {
+        return Member.builder()
+                .username("username")
+                .password("password")
+                .nickname("nickname")
+                .role("USER_ROLE")
+                .build();
+    }
+
+    private Reply createReply() {
+        return Reply.builder().content("content").build();
+    }
+
+    @DisplayName("댓글을 등록한다")
+    @Test
+    void writeReply() {
+        //Arrange
+        Post post = createPost();
+        Long pid = post.getPid();
+
+        Member member = createMember();
+        com.example.studywithme.global.auth.UserDto userDto = new com.example.studywithme.global.auth.UserDto(member);
+
+        ReplyRequest replyRequest = new ReplyRequest("content");
+
+        given(postService.getPost(pid)).willReturn(post);
+
+        //Act
+        replyService.writeReply(userDto, pid, replyRequest);
+
+        //Assert
+        assertThat(post.getReplies().size()).isEqualTo(1);
+        assertThat(member.getReplies().size()).isEqualTo(1);
+
+        verify(replyRepository, times(1)).save(any());
+    }
 
     @DisplayName("댓글을 수정한다")
     @Test
@@ -55,6 +108,21 @@ public class ReplyServiceTest {
         assertThat(reply.getContent()).isEqualTo(modified_content);
     }
 
+    @DisplayName("댓글을 삭제한다")
+    @Test
+    void deleteReply() {
+        //Arrange
+        Reply reply = createReply();
+        Long rid = reply.getRid();
+
+        //Act
+        replyService.deleteReply(rid);
+
+        //Assert
+        verify(replyRepository, times(1)).deleteById(any());
+    }
+
+    @DisplayName("특정 게시물에 모든 댓글을 조회한다")
     @Test
     void readReplies() {
         //Arrange
@@ -66,15 +134,24 @@ public class ReplyServiceTest {
         Page<ReplyResponse> replyResponses = replyService.readReplies(pid, pageable);
 
         //Assert
-
         verify(replyRepository, times(1)).findAllByPid(pid);
-
         assertThat(replyResponses.getNumber()).isEqualTo(0);
         assertThat(replyResponses.getSize()).isEqualTo(10);
         assertThat(replyResponses.getSort()).isEqualTo(Sort.by(Sort.Direction.DESC, "createdDate"));
     }
 
-    private Reply createReply() {
-        return Reply.builder().content("content").build();
+    @Test
+    void readMyReplies() {
+        //Arrange
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+
+        Pageable pageable = PageRequest.of(0, 10, Sort.Direction.DESC, "createdDate");
+
+        //Act
+        replyService.readMyReplies(userDto, pageable);
+
+        //Assert
+        verify(replyRepository, times(1)).findAllByMember(member);
     }
 }

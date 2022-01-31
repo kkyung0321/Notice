@@ -58,7 +58,8 @@ public class ReplyServiceImpl implements ReplyService {
     }
 
     @Override
-    public Page<ReplyResponse> readMyReplies(Member member, Pageable pageable) {
+    public Page<ReplyResponse> readMyReplies(UserDto userDto, Pageable pageable) {
+        Member member = userDto.getMember();
         List<Reply> replies = replyRepository.findAllByMember(member);
         return ReplyResponse.of(replies, pageable);
     }
