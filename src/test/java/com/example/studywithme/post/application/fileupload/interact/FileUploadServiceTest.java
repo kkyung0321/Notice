@@ -29,23 +29,6 @@ public class FileUploadServiceTest {
     @InjectMocks
     private FileUploadServiceImpl fileUploadService;
 
-    @DisplayName("파일을 업로드하고 데이터를 저장한다")
-    @Test
-    void uploadFile() throws Exception {
-        //Arrange
-
-        Post post = createPost();
-
-        List<MultipartFile> multipartFiles = getMultipartFiles();
-
-        //Act
-        fileUploadService.uploadFile(post, multipartFiles);
-
-        //Assert
-        verify(imageFileService, atLeast(1))
-                .saveImageFile(any(Post.class), any(String.class));
-    }
-
     private List<MultipartFile> getMultipartFiles() {
         MockMultipartFile multipartFile1 = new MockMultipartFile(
                 "file1", "hello1.txt", null, "hello world1".getBytes()
@@ -68,5 +51,21 @@ public class FileUploadServiceTest {
                 .hits(0L)
                 .likeCounts(0L)
                 .build();
+    }
+
+    @DisplayName("파일을 업로드하고 데이터를 저장한다")
+    @Test
+    void uploadFile() throws Exception {
+        //Arrange
+
+        Post post = createPost();
+
+        List<MultipartFile> multipartFiles = getMultipartFiles();
+
+        //Act
+        fileUploadService.uploadFile(post, multipartFiles);
+
+        //Assert
+        verify(imageFileService, atLeast(1)).saveImageFile(any(), any());
     }
 }

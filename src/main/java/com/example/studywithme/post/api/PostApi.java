@@ -49,7 +49,7 @@ public class PostApi {
                                            @RequestParam("username") String username) throws Exception {
 
         if (userDto.getUsername().equals(username)) {
-            postService.modifyPost(userDto, postRequest, multipartFiles, pid);
+            postService.modifyPost(userDto, pid, postRequest, multipartFiles);
             return ResponseEntity.ok(null);
         } else {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE.getMessage());
@@ -76,5 +76,14 @@ public class PostApi {
         Page<PostResponse> response = postService.readPosts(search, pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/members")
+    public ResponseEntity<Page<PostResponse>> readMyPosts(@AuthenticationPrincipal UserDto userDto,
+                                                          @PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC)
+                                                                  Pageable pageable) {
+
+        Page<PostResponse> postResponses = postService.readMyPosts(userDto, pageable);
+        return ResponseEntity.ok(postResponses);
     }
 }
