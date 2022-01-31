@@ -37,6 +37,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -139,14 +141,13 @@ public class PostApiAcceptanceTest {
         Member member = createMember();
         String title = "title";
         String content = "content";
+        UserDto userDto = new UserDto(member);
 
         MockMultipartFile postRequestMultipart = getPostRequestMultipart(title, content);
 
         MockMultipartFile multipartFile1 = getMultipartFile("hello1.txt", "hello world1");
 
         MockMultipartFile multipartFile2 = getMultipartFile("hello2.txt", "hello world2");
-
-        UserDto userDto = new UserDto(member);
 
         //Act
         mockMvc.perform(multipart("/posts")
@@ -391,5 +392,31 @@ public class PostApiAcceptanceTest {
                 .andExpect(jsonPath("$['number']").value(0))
                 .andExpect(jsonPath("$['totalElements']").value(0))
                 .andExpect(jsonPath("$..content.length()").value(0));
+    }
+
+    @DisplayName("내가 쓴 게시물을 조회한다")
+    @Test
+    void readMyPosts() throws Exception {
+        //Arrange
+        List<Post> posts = createPosts();
+
+        Member member = createMember();
+        UserDto userDto = new UserDto(member);
+
+        for (Post post : posts) {
+            member.updatePost(post);
+        }
+
+        //Act
+        mockMvc.perform(get("/posts/members")
+                .with(user(userDto)))
+                .andDo(print())
+                .andExpect(jsonPath("$..number").value(0))
+                .andExpect(jsonPath("$..size").value(10))
+                .andExpect(jsonPath("$..totalElements").value(33))
+                .andExpect(jsonPath("$['sort']['sorted']").value(true))
+                .andExpect(jsonPath("$..content").isNotEmpty())
+                .andExpect(jsonPath("$..username", hasItem(member.getUsername())))
+                .andExpect(jsonPath("$..title", hasItem(matchesRegex("^(title).*$"))));
     }
 }

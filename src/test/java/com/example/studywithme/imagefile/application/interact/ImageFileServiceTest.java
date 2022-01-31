@@ -25,20 +25,6 @@ public class ImageFileServiceTest {
     @InjectMocks
     private ImageFileServiceImpl imageFileService;
 
-    @Test
-    void saveImageFile() {
-        //Arrange
-        Post post = createPost();
-
-        String path = "path";
-
-        //Act
-        imageFileService.saveImageFile(post, path);
-
-        //Assert
-        verify(imageFileRepository, times(1)).save(any());
-    }
-
     private Post createPost() {
         String title = "title";
         String content = "content";
@@ -51,5 +37,19 @@ public class ImageFileServiceTest {
                 .hits(hits)
                 .likeCounts(likeCounts)
                 .build();
+    }
+
+    @Test
+    void saveImageFile() {
+        //Arrange
+        Post post = createPost();
+
+        String path = "path";
+
+        //Act
+        imageFileService.saveImageFile(post, path);
+
+        //Assert
+        verify(imageFileRepository, times(1)).save(any());
     }
 }

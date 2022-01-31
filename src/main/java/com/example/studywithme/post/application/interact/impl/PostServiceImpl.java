@@ -56,14 +56,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void modifyPost(UserDto userDto, PostRequest postRequest, List<MultipartFile> multipartFiles, Long pid) throws Exception {
+    public void modifyPost(UserDto userDto, Long pid, PostRequest postRequest, List<MultipartFile> multipartFiles) throws Exception {
         imageFileService.deleteImageFilesByPid(pid);
 
         Post post = postRepository.findById(pid).orElseThrow();
 
         post.updatePost(postRequest);
 
-        fileUploadService.uploadFile(post, multipartFiles);
+        if (multipartFiles != null)
+            fileUploadService.uploadFile(post, multipartFiles);
     }
 
     @Override
@@ -73,18 +74,20 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Page<PostResponse> readPosts(String search, Pageable pageable) {
-        List<Post> posts;
+        if (search == null)
+            return PostResponse.of(postRepository.findAll(), pageable);
+        else {
+            List<Post> searchList = getSearchList(search);
 
-        if (search == null) {
-            posts = postRepository.findAll();
-            return PostResponse.of(posts, pageable);
-        } else {
-            posts = postRepository.findAllBySearch(search);
-            if (posts.size() > 0)
-                return PostResponse.of(posts, pageable);
+            if (searchList != null && searchList.size() > 0)
+                return PostResponse.of(searchList, pageable);
             else
                 return new PageImpl<>(new ArrayList<>());
         }
+    }
+
+    private List<Post> getSearchList(String search) {
+        return postRepository.findAllBySearch(search);
     }
 
     @Override
@@ -93,7 +96,8 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<PostResponse> readMyPosts(Member member, Pageable pageable) {
+    public Page<PostResponse> readMyPosts(UserDto userDto, Pageable pageable) {
+        Member member = userDto.getMember();
         List<Post> posts = postRepository.findAllByMember(member);
         return PostResponse.of(posts, pageable);
     }
