@@ -1,6 +1,5 @@
 package com.example.studywithme.member.api;
 
-import com.example.studywithme.global.auth.UserDto;
 import com.example.studywithme.global.error.exception.BusinessException;
 import com.example.studywithme.member.application.dao.MemberRepository;
 import com.example.studywithme.member.application.dto.MemberRequest;
@@ -29,7 +28,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -163,7 +161,7 @@ public class MemberApiAcceptanceTest {
         //Arrange
         Member member = createMember();
 
-        UserDto userDto = new UserDto(member);
+        com.example.studywithme.global.auth.UserDto userDto = new com.example.studywithme.global.auth.UserDto(member);
 
         //Act
         mockMvc.perform(get("/members")
@@ -222,57 +220,5 @@ public class MemberApiAcceptanceTest {
         Member expect = memberRepository.findById(mid).get();
         assertThat(expect.getNickname()).isEqualTo(modified_nickname);
         assertThat(expect.getUsername()).isEqualTo(username);
-    }
-
-    @Test
-    void readMyPosts() throws Exception {
-        //Arrange
-        List<Post> posts = createPosts();
-
-        Member member = createMember();
-        UserDto userDto = new UserDto(member);
-
-        for (Post post : posts) {
-            member.updatePost(post);
-        }
-
-        //Act
-        mockMvc.perform(get("/members/posts")
-                .with(user(userDto)))
-                .andDo(print())
-                .andExpect(jsonPath("$..number").value(0))
-                .andExpect(jsonPath("$..size").value(10))
-                .andExpect(jsonPath("$..totalElements").value(33))
-                .andExpect(jsonPath("$['sort']['sorted']").value(true))
-                .andExpect(jsonPath("$..content").isNotEmpty())
-                .andExpect(jsonPath("$..username", hasItem(member.getUsername())))
-                .andExpect(jsonPath("$..title", hasItem("title")));
-    }
-
-    @Test
-    void readMyReplies() throws Exception {
-        //Arrange
-        List<Reply> replies = createReplies();
-
-        Member member = createMember();
-        UserDto userDto = new UserDto(member);
-
-        Post post = createPost();
-
-        for (Reply reply : replies) {
-            member.updateReply(reply);
-            post.updateReply(reply);
-        }
-
-        //Act
-        mockMvc.perform(get("/members/replies")
-                .with(user(userDto)))
-                .andDo(print())
-                .andExpect(jsonPath("$..number").value(0))
-                .andExpect(jsonPath("$..size").value(10))
-                .andExpect(jsonPath("$..totalElements").value(33))
-                .andExpect(jsonPath("$['sort']['sorted']").value(true))
-                .andExpect(jsonPath("$..username", hasItem(member.getUsername())))
-                .andExpect(jsonPath("$..content", hasItem("content")));
     }
 }

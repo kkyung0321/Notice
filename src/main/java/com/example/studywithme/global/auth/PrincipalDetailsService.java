@@ -27,6 +27,6 @@ public class PrincipalDetailsService implements UserDetailsService {
         Member member = memberService.findByUsername(username);
         member.updateLoginDate(new Date());
 
-        return new UserDto(member);
+        return new com.example.studywithme.global.auth.UserDto(member);
     }
 }
