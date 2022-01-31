@@ -8,13 +8,7 @@ import com.example.studywithme.member.application.dto.MemberRequest;
 import com.example.studywithme.member.application.dto.MemberResponse;
 import com.example.studywithme.member.application.entity.Member;
 import com.example.studywithme.member.application.interact.MemberService;
-import com.example.studywithme.post.application.dto.PostResponse;
-import com.example.studywithme.post.application.interact.PostService;
-import com.example.studywithme.reply.application.dto.ReplyResponse;
-import com.example.studywithme.reply.application.interact.ReplyService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
-
-    private final PostService postService;
-
-    private final ReplyService replyService;
 
     @Override
     public Member findByUsername(String username) {
@@ -61,17 +51,5 @@ public class MemberServiceImpl implements MemberService {
 
             member.updateInfo(memberRequest);
         }
-    }
-
-    @Override
-    public Page<PostResponse> readMyPosts(UserDto userDto, Pageable pageable) {
-        Member member = userDto.getMember();
-        return postService.readMyPosts(member, pageable);
-    }
-
-    @Override
-    public Page<ReplyResponse> readMyReplies(UserDto userDto, Pageable pageable) {
-        Member member = userDto.getMember();
-        return replyService.readMyReplies(member, pageable);
     }
 }
